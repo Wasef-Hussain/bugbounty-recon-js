@@ -9,11 +9,17 @@ const { dirBrute } = require('./recon/dirBrute');
 const { nucleiScan } = require('./recon/nucleiScan');
 const { logInfo } = require('./utils/logger');
 
-const target = process.argv[2];
-if (!target) {
+const targetRaw = process.argv[2];
+
+
+
+if (!targetRaw) {
   console.error('Usage: node fullRecon.js <target.com>');
   process.exit(1);
 }
+const url = new URL(targetRaw.startsWith('http') ? targetRaw : 'http://' + targetRaw);
+const target = url.hostname;
+const wordlistArg = process.argv[3] || 'wordlists/common.txt';
 console.log(process.env.API_KEY); // access your API key
 const outputDir = path.join(__dirname, 'output', target);
 if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
@@ -23,6 +29,6 @@ if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
   await fetchSubdomains(target, outputDir);
   await probeAlive(outputDir);
   await fetchWaybackURLs(target, outputDir);
-  await dirBrute(target, outputDir);
+  await dirBrute(target, outputDir, wordlistArg);
   await nucleiScan(outputDir);
 })();
