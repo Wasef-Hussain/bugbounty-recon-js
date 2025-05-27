@@ -15,7 +15,7 @@ async function nucleiScan(outputDir, templates = 'default') {
   }
 
   const inputFile = alivePath;
-  const reportFile = path.join(outputDir, 'scan-report.json');
+  const reportFile = path.join(outputDir, 'scan-report.txt'); // note: changed extension for clarity
 
   // Check if nuclei is installed
   try {
@@ -26,7 +26,7 @@ async function nucleiScan(outputDir, templates = 'default') {
   }
 
   const templateArg = templates !== 'default' ? `-t ${templates}` : '';
-  const cmd = `nuclei -l "${inputFile}" -o "${reportFile}" -json -severity low,medium,high,critical ${templateArg}`;
+  const cmd = `nuclei -l "${inputFile}" -o "${reportFile}" -severity low,medium,high,critical ${templateArg}`;
 
   logInfo('[*] Running Nuclei scan...');
 
@@ -36,7 +36,11 @@ async function nucleiScan(outputDir, templates = 'default') {
     if (stdout) console.log(stdout.trim());
     if (stderr) console.error(stderr.trim());
 
-    logInfo(`[*] Nuclei scan complete. Report saved to: ${reportFile}`);
+    if (fs.existsSync(reportFile)) {
+      logInfo(`[*] Nuclei scan complete. Report saved to: ${reportFile}`);
+    } else {
+      logError('[!] Scan finished but report file not found.');
+    }
   } catch (err) {
     logError(`[!] Nuclei scan failed: ${err.message}`);
   }
