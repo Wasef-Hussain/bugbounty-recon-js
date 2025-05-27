@@ -7,7 +7,10 @@ const execAsync = util.promisify(exec);
 const { logInfo, logError } = require('../utils/logger');
 
 async function nucleiScan(outputDir, templates = 'default') {
+  logInfo(`[*] Starting Nuclei scan for directory: ${outputDir}`);
+
   const alivePath = path.join(outputDir, 'alive.txt');
+  logInfo(`[*] Checking for alive.txt at: ${alivePath}`);
 
   if (!fs.existsSync(alivePath)) {
     logError('[!] alive.txt not found. Run probe step first.');
@@ -15,11 +18,15 @@ async function nucleiScan(outputDir, templates = 'default') {
   }
 
   const inputFile = alivePath;
-  const reportFile = path.join(outputDir, 'scan-report.txt'); // note: changed extension for clarity
+  const reportFile = path.join(outputDir, 'scan-report.txt'); // changed extension for clarity
+
+  logInfo(`[*] Input file for Nuclei: ${inputFile}`);
+  logInfo(`[*] Output report file will be: ${reportFile}`);
 
   // Check if nuclei is installed
   try {
-    await execAsync('which nuclei');
+    const { stdout } = await execAsync('which nuclei');
+    logInfo(`[*] Found Nuclei binary at: ${stdout.trim()}`);
   } catch {
     logError(`[!] 'nuclei' command not found. Please install it using:\n  go install -v github.com/projectdiscovery/nuclei/v3/cmd/nuclei@latest`);
     return;
@@ -28,13 +35,15 @@ async function nucleiScan(outputDir, templates = 'default') {
   const templateArg = templates !== 'default' ? `-t ${templates}` : '';
   const cmd = `nuclei -l "${inputFile}" -o "${reportFile}" -severity low,medium,high,critical ${templateArg}`;
 
-  logInfo('[*] Running Nuclei scan...');
+  logInfo(`[*] Executing Nuclei command:\n${cmd}`);
 
   try {
     const { stdout, stderr } = await execAsync(cmd);
 
-    if (stdout) console.log(stdout.trim());
-    if (stderr) console.error(stderr.trim());
+    logInfo('[*] Nuclei command executed.');
+
+    if (stdout) logInfo(`[*] STDOUT:\n${stdout.trim()}`);
+    if (stderr) logInfo(`[*] STDERR:\n${stderr.trim()}`);
 
     if (fs.existsSync(reportFile)) {
       logInfo(`[*] Nuclei scan complete. Report saved to: ${reportFile}`);
